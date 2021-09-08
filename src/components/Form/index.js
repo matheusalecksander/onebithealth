@@ -5,7 +5,8 @@ import { View,
          TouchableOpacity,
          Vibration,
          Pressable,
-         Keyboard } from 'react-native';
+         Keyboard,
+         FlatList } from 'react-native';
 
 import styles from './style'
 
@@ -20,11 +21,20 @@ export default function Form(){
   const [imc, setImc] = useState(null)
   const [textButton, setTextButton] = useState("Calcular")
   const [errorMessage, setErrorMessage] = useState(null)
+  const [imcList, setImcList] = useState([])
 
   function calculateImc() {
     let heightFormat = height.replace(',', '.')
     let weightFormat = weight.replace(',', '.')
-    return setImc((weightFormat/(heightFormat*heightFormat)).toFixed(2))
+    let totalImc = (weightFormat/(heightFormat*heightFormat)).toFixed(2)
+
+    setImcList((arr) => [...arr, {id: new Date().getTime(), imc: totalImc}])
+    /* Aqui estamos adicionando um novo calculo ao nosso array para exibirmos na FlatList
+    Vamos utilziar o método new Date().getTime() para criação do nosso id
+    já que esse método nos retorna uma nova data em formato de milissegundos
+    então passamos ele para ser nosso id para que a flatlist possa imprimir
+    o resultado na tela */
+    setImc(totalImc)
   }
 
   function errorMsg(){
@@ -40,35 +50,39 @@ export default function Form(){
       setErrorMessage(null)
       setMessageImc("Seu IMC é:")
       setTextButton("Calcular Novamente")
-      return
     }
-    setImc(null)
-    errorMsg()
-    setTextButton("Calcular")
-    setMessageImc("Preencha os campos de Altura e Peso")
-  }
+    else{
+      setImc(null)
+      errorMsg()
+      setTextButton("Calcular")
+      setMessageImc("Preencha os campos de Altura e Peso")
+  }}
 
   return(
-    <Pressable 
-     onPress={Keyboard.dismiss}
-     style={styles.container}>
-      <View>
+    <View style={styles.container}>
+      { imc === null ? 
+        <Pressable 
+         onPress={Keyboard.dismiss}
+        >
 
-        <Text style={styles.label}>Altura {errorMessage}</Text>
+        <Text style={styles.label}>Altura</Text>
+        <Text style={styles.error}> {errorMessage} </Text>
         <TextInput style={styles.input}
           onChangeText={setHeight}
           value={height}
           placeholder="EX: 1.75"
-          placeholderTextColor="#ff0043"
+          placeholderTextColor="#909090"
           keyboardType="numeric"
         />
 
-        <Text style={styles.label}>Peso {errorMessage}</Text>
+        <Text style={styles.label}>Peso</Text>
+        <Text style={styles.error}> {errorMessage} </Text>
+
         <TextInput style={styles.input}
           onChangeText={setWeight}
           value={weight}
           placeholder="EX: 75.5"
-          placeholderTextColor="#ff0043"
+          placeholderTextColor="#909090"
           keyboardType="numeric"
         />
         <TouchableOpacity
@@ -80,11 +94,40 @@ export default function Form(){
             {textButton}
           </Text>
         </ TouchableOpacity>
-      </View>
-
-      <ResultImc
-        messageResultImc={messageImc}
-        resultImc={imc} />
-    </Pressable>
+        </Pressable>
+      :
+        <View style={styles.showResultImc}>
+          <ResultImc
+            messageResultImc={messageImc}
+            resultImc={imc} />
+          <TouchableOpacity
+            onPress={() => validateImc()}
+            style={styles.btnCalculate}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.textBtnCalculate}>
+              {textButton}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      }
+      <FlatList
+        showVerticalScrollIndicator={false}
+        style={styles.listImcs}
+        data={imcList.reverse()}
+        renderItem={({item}) => {
+          return(
+            <Text style={styles.resultResultItemList}>Resultado IMC = 
+              <Text style={styles.resultImcItem}>
+                {" "}{item.imc}
+              </Text>
+            </Text>
+          )
+        }}
+        keyExtractor={(item) => {
+          item.id
+        }}
+      />
+    </View>
   )
-}
+} 
